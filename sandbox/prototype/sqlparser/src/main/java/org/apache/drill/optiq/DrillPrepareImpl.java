@@ -17,21 +17,31 @@
  ******************************************************************************/
 package org.apache.drill.optiq;
 
-import org.eigenbase.rel.RelNode;
-import org.eigenbase.relopt.Convention;
+import net.hydromatic.optiq.prepare.OptiqPrepareImpl;
+import net.hydromatic.optiq.rules.java.JavaRules;
+import org.eigenbase.relopt.RelOptPlanner;
 
 /**
- * Relational expression that is implemented in Drill.
+ * Implementation of {@link net.hydromatic.optiq.jdbc.OptiqPrepare} for Drill.
  */
-public interface DrillRel extends RelNode {
-  /** Calling convention for relational expressions that are "implemented" by
-   * generating Drill logical plans. */
-  Convention CONVENTION = new Convention.Impl("DRILL", DrillRel.class);
+public class DrillPrepareImpl extends OptiqPrepareImpl {
+  public DrillPrepareImpl() {
+    super();
+  }
 
-  void implement(DrillImplementor implementor);
+  @Override
+  protected RelOptPlanner createPlanner() {
+    final RelOptPlanner planner = super.createPlanner();
+    planner.addRule(EnumerableDrillRule.ARRAY_INSTANCE);
+    planner.addRule(EnumerableDrillRule.CUSTOM_INSTANCE);
 
-  /** The name of the field that contains all other fields. */
-  String getHolder();
+    // Enable when https://issues.apache.org/jira/browse/DRILL-57 fixed
+    if (false) {
+      planner.addRule(DrillValuesRule.INSTANCE);
+      planner.removeRule(JavaRules.ENUMERABLE_VALUES_RULE);
+    }
+    return planner;
+  }
 }
 
-// End DrillRel.java
+// End DrillPrepareImpl.java

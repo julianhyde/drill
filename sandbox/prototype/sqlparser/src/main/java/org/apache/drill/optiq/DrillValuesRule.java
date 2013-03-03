@@ -17,21 +17,32 @@
  ******************************************************************************/
 package org.apache.drill.optiq;
 
-import org.eigenbase.rel.RelNode;
-import org.eigenbase.relopt.Convention;
+import org.eigenbase.rel.ValuesRel;
+import org.eigenbase.relopt.*;
 
 /**
- * Relational expression that is implemented in Drill.
+ * Rule that converts a {@link ValuesRel} to a Drill
+ * "values" operation.
  */
-public interface DrillRel extends RelNode {
-  /** Calling convention for relational expressions that are "implemented" by
-   * generating Drill logical plans. */
-  Convention CONVENTION = new Convention.Impl("DRILL", DrillRel.class);
+public class DrillValuesRule extends RelOptRule {
+  public static final RelOptRule INSTANCE = new DrillValuesRule();
 
-  void implement(DrillImplementor implementor);
+  private DrillValuesRule() {
+    super(
+        new RelOptRuleOperand(
+            ValuesRel.class,
+            Convention.NONE),
+        "DrillValuesRule");
+  }
 
-  /** The name of the field that contains all other fields. */
-  String getHolder();
+  @Override
+  public void onMatch(RelOptRuleCall call) {
+    final ValuesRel values = (ValuesRel) call.getRels()[0];
+    final RelTraitSet traits = values.getTraitSet().plus(DrillRel.CONVENTION);
+    call.transformTo(
+        new DrillValuesRel(values.getCluster(), values.getRowType(),
+            values.getTuples(), traits));
+  }
 }
 
-// End DrillRel.java
+// End DrillValuesRule.java
