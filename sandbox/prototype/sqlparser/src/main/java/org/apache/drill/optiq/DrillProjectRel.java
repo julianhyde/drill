@@ -91,9 +91,6 @@ public class DrillProjectRel extends ProjectRelBase implements DrillRel {
       final ObjectNode objectNode = implementor.mapper.createObjectNode();
       transforms.add(objectNode);
       String expr = DrillOptiq.toDrill(pair.left, childHolder);
-      if (expr.equals("xxx.ppu")) {
-//        expr = "xxx.D.ppu";
-      }
       objectNode.put("expr", expr);
       String ref = prefix + pair.right;
       objectNode.put("ref", ref);

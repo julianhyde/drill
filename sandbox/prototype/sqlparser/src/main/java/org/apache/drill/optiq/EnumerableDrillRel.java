@@ -28,6 +28,7 @@ import org.eigenbase.rel.RelNode;
 import org.eigenbase.rel.SingleRel;
 import org.eigenbase.relopt.*;
 
+import org.eigenbase.reltype.RelDataType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +102,7 @@ public class EnumerableDrillRel extends SingleRel implements EnumerableRel {
     drillImplementor.go(input);
     String plan = drillImplementor.getJsonString();
     Hook.LOGICAL_PLAN.run(plan);
+    final RelDataType rowType = getRowType();
     final List<String> fieldNameList = RelOptUtil.getFieldNameList(rowType);
     String holder = input.getHolder();
     if (fieldNameList.equals(Arrays.asList("_MAP")) && !holder.equals("xxx")) {

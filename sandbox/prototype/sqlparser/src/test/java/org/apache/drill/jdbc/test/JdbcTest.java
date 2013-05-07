@@ -53,6 +53,16 @@ public class JdbcTest extends TestCase {
       + "           name: 'DEPARTMENTS',\n"
       + "           type: 'custom',\n"
       + "           factory: '" + DrillTable.Factory.class.getName() + "'\n"
+      + "         },\n"
+      + "         {\n"
+      + "           name: 'EMP',\n"
+      + "           type: 'view',\n"
+      + "           sql: 'select _MAP[\\'deptId\\'] as deptid, _MAP[\\'lastName\\'] as lastName from employees'\n"
+      + "         },\n"
+      + "         {\n"
+      + "           name: 'DEPT',\n"
+      + "           type: 'view',\n"
+      + "           sql: 'select _MAP[\\'deptId\\'] as deptid, _MAP[\\'name\\'] as name from departments'\n"
       + "         }\n"
       + "       ]\n"
       + "     }\n"
@@ -105,7 +115,7 @@ public class JdbcTest extends TestCase {
   }
 
   /** Simple query against EMP table in HR database. */
-  public void testSelectEmp() throws Exception {
+  public void testSelectEmployees() throws Exception {
     JdbcAssert.withModel(MODEL, "HR")
         .sql("select * from employees")
         .returns("_MAP={deptId=31, lastName=Rafferty}\n"
@@ -114,6 +124,18 @@ public class JdbcTest extends TestCase {
             + "_MAP={deptId=34, lastName=Robinson}\n"
             + "_MAP={deptId=34, lastName=Smith}\n"
             + "_MAP={lastName=John}\n");
+  }
+
+  /** Simple query against EMP table in HR database. */
+  public void testSelectEmpView() throws Exception {
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql("select * from emp")
+        .returns("DEPTID=31; LASTNAME=Rafferty\n"
+            + "DEPTID=33; LASTNAME=Jones\n"
+            + "DEPTID=33; LASTNAME=Steinberg\n"
+            + "DEPTID=34; LASTNAME=Robinson\n"
+            + "DEPTID=34; LASTNAME=Smith\n"
+            + "DEPTID=null; LASTNAME=John\n");
   }
 
   /** Simple query against EMP table in HR database. */
@@ -232,6 +254,52 @@ public class JdbcTest extends TestCase {
         .returns("EXPR$0=1\n");
 
     // Enable when https://issues.apache.org/jira/browse/DRILL-57 fixed
+    // .planContains("store");
+  }
+
+  public void testDistinct() throws Exception {
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql("select distinct deptId from emp")
+        .returns("xxx\n");
+
+    // Enable when have implemented agg:
+    // .planContains("store");
+  }
+
+  public void testCountNoGroupBy() throws Exception {
+    // 5 out of 6 employees have a not-null deptId
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql("select count(deptId) as c from emp")
+        .returns("C=5\n");
+
+    // Enable when have implemented agg:
+    // .planContains("store");
+  }
+
+  public void testDistinctCountNoGroupBy() throws Exception {
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql("select count(distinct deptId) as c from emp")
+        .returns("C=4\n");
+
+    // Enable when have implemented agg:
+    // .planContains("store");
+  }
+
+  public void testDistinctCountGroupByEmpty() throws Exception {
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql("select count(distinct deptId) as c from emp group by ()")
+        .returns("C=4\n");
+
+    // Enable when have implemented agg:
+    // .planContains("store");
+  }
+
+  public void testCount() throws Exception {
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql("select count(*) as c, deptId from emp group by deptId")
+        .returns("xxx\n");
+
+    // Enable when have implemented agg:
     // .planContains("store");
   }
 }
