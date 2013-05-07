@@ -18,6 +18,7 @@
 package org.apache.drill.jdbc;
 
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.Collections;
 
 import net.hydromatic.linq4j.BaseQueryable;
@@ -127,7 +128,9 @@ public class DrillTable extends BaseQueryable<Object>
       final ClasspathRSE.ClasspathRSEConfig rseConfig =
           new ClasspathRSE.ClasspathRSEConfig("donuts-json");
       final ClasspathInputConfig inputConfig = new ClasspathInputConfig();
-      inputConfig.path = "/donuts.json";
+      assert Arrays.asList("DONUTS", "EMPLOYEES", "DEPARTMENTS").contains(name)
+          : name;
+      inputConfig.path = "/" + name.toLowerCase() + ".json";
       inputConfig.type = DataWriter.ConverterType.JSON;
       return createTable(typeFactory, (MutableSchema) schema, name, rseConfig,
           inputConfig);

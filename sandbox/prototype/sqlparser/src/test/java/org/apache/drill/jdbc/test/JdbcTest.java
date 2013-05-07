@@ -40,6 +40,21 @@ public class JdbcTest extends TestCase {
       + "           factory: '" + DrillTable.Factory.class.getName() + "'\n"
       + "         }\n"
       + "       ]\n"
+      + "     },\n"
+      + "     {\n"
+      + "       name: 'HR',\n"
+      + "       tables: [\n"
+      + "         {\n"
+      + "           name: 'EMPLOYEES',\n"
+      + "           type: 'custom',\n"
+      + "           factory: '" + DrillTable.Factory.class.getName() + "'\n"
+      + "         },\n"
+      + "         {\n"
+      + "           name: 'DEPARTMENTS',\n"
+      + "           type: 'custom',\n"
+      + "           factory: '" + DrillTable.Factory.class.getName() + "'\n"
+      + "         }\n"
+      + "       ]\n"
       + "     }\n"
       + "   ]\n"
       + "}";
@@ -87,6 +102,28 @@ public class JdbcTest extends TestCase {
     JdbcAssert.withModel(MODEL, "DONUTS")
         .sql("select * from donuts")
         .returns(EXPECTED);
+  }
+
+  /** Simple query against EMP table in HR database. */
+  public void testSelectEmp() throws Exception {
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql("select * from employees")
+        .returns("_MAP={deptId=31, lastName=Rafferty}\n"
+            + "_MAP={deptId=33, lastName=Jones}\n"
+            + "_MAP={deptId=33, lastName=Steinberg}\n"
+            + "_MAP={deptId=34, lastName=Robinson}\n"
+            + "_MAP={deptId=34, lastName=Smith}\n"
+            + "_MAP={lastName=John}\n");
+  }
+
+  /** Simple query against EMP table in HR database. */
+  public void testSelectDept() throws Exception {
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql("select * from departments")
+        .returns("_MAP={deptId=31, name=Sales}\n"
+            + "_MAP={deptId=33, name=Engineering}\n"
+            + "_MAP={deptId=34, name=Clerical}\n"
+            + "_MAP={deptId=35, name=Marketing}\n");
   }
 
   /** Query with project list. No field references yet. */
