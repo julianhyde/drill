@@ -21,6 +21,7 @@ import com.google.common.base.Function;
 
 import junit.framework.TestCase;
 
+import org.apache.drill.exec.ref.ReferenceInterpreter;
 import org.apache.drill.jdbc.DrillTable;
 
 import java.sql.*;
@@ -81,6 +82,16 @@ public class JdbcTest extends TestCase {
    * is fixed. When it is fixed, remove this constant enable the tests that are
    * disabled because of it. */
   private static final boolean BUG_DRILL_61_FIXED = false;
+
+  /**
+   * Command-line utility to execute a logical plan.
+   *
+   * <p>The forwarding method ensures that the IDE calls
+   * this method with the right classpath.</p>
+   */
+  public static void main(String[] args) throws Exception {
+      ReferenceInterpreter.main(args);
+  }
 
   /** Load driver. */
   public void testLoadDriver() throws ClassNotFoundException {
