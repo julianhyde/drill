@@ -48,18 +48,19 @@ public class DrillFilterRel extends FilterRelBase implements DrillRel {
   }
 
   @Override
-  public void implement(DrillImplementor implementor) {
-    implementor.visitChild(this, 0, getChild());
-    final ObjectNode node = implementor.mapper.createObjectNode();
+  public int implement(DrillImplementor implementor) {
+    final int inputId = implementor.visitChild(this, 0, getChild());
+    final ObjectNode filter = implementor.mapper.createObjectNode();
 /*
       E.g. {
 	      op: "filter",
 	      expr: "donuts.ppu < 1.00"
 	    }
 */
-    node.put("op", "filter");
-    node.put("expr", DrillOptiq.toDrill(getChild(), getCondition()));
-    implementor.add(node);
+    filter.put("op", "filter");
+    filter.put("input", inputId);
+    filter.put("expr", DrillOptiq.toDrill(getChild(), getCondition()));
+    return implementor.add(filter);
   }
 }
 

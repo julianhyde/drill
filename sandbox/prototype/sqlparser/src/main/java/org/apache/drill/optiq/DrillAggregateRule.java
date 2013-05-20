@@ -22,8 +22,10 @@ import org.eigenbase.rel.RelNode;
 import org.eigenbase.relopt.*;
 
 /**
- * Rule that converts a {@link org.eigenbase.rel.AggregateRel} to a Drill
- * "segment" operation followed by a "collapseaggregate" operation.
+ * Rule that converts an {@link AggregateRel} to
+ * a {@link DrillAggregateRel},
+ * implemented by a Drill "segment" operation
+ * followed by a "collapseaggregate" operation.
  */
 public class DrillAggregateRule extends RelOptRule {
   public static final RelOptRule INSTANCE = new DrillAggregateRule();

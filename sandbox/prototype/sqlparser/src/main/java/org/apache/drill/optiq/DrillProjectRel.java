@@ -57,9 +57,9 @@ public class DrillProjectRel extends ProjectRelBase implements DrillRel {
   }
 
   @Override
-  public void implement(DrillImplementor implementor) {
-    implementor.visitChild(this, 0, getChild());
-    final ObjectNode node = implementor.mapper.createObjectNode();
+  public int implement(DrillImplementor implementor) {
+    int inputId = implementor.visitChild(this, 0, getChild());
+    final ObjectNode project = implementor.mapper.createObjectNode();
 /*
     E.g. {
       op: "project",
@@ -67,9 +67,10 @@ public class DrillProjectRel extends ProjectRelBase implements DrillRel {
 	      { ref: "output.quantity", expr: "donuts.sales"}
 	    ]
 */
-    node.put("op", "project");
+    project.put("op", "project");
+    project.put("input", inputId);
     final ArrayNode transforms = implementor.mapper.createArrayNode();
-    node.put("projections", transforms);
+    project.put("projections", transforms);
     final String prefix = "output.";
     for (Pair<RexNode, String> pair : projects()) {
       final ObjectNode objectNode = implementor.mapper.createObjectNode();
@@ -79,7 +80,7 @@ public class DrillProjectRel extends ProjectRelBase implements DrillRel {
       String ref = prefix + pair.right;
       objectNode.put("ref", ref);
     }
-    implementor.add(node);
+    return implementor.add(project);
   }
 }
 

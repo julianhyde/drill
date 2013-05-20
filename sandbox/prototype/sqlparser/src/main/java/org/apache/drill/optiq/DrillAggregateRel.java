@@ -46,8 +46,8 @@ public class DrillAggregateRel extends AggregateRelBase implements DrillRel {
   }
 
   @Override
-  public void implement(DrillImplementor implementor) {
-    implementor.visitChild(this, 0, getChild());
+  public int implement(DrillImplementor implementor) {
+    int inputId = implementor.visitChild(this, 0, getChild());
     final List<String> childFields =
         RelOptUtil.getFieldNameList(getChild().getRowType());
     final List<String> fields = RelOptUtil.getFieldNameList(getRowType());
@@ -67,6 +67,7 @@ public class DrillAggregateRel extends AggregateRelBase implements DrillRel {
 */
     final ObjectNode segment = implementor.mapper.createObjectNode();
     segment.put("op", "segment");
+    segment.put("input", inputId);
     // TODO: choose different name for field if there is already a field
     // called "segment"
     segment.put("ref", "segment");
@@ -94,7 +95,7 @@ public class DrillAggregateRel extends AggregateRelBase implements DrillRel {
     }
 
     implementor.add(segment);
-    implementor.add(aggregate);
+    return implementor.add(aggregate);
   }
 
   private String toDrill(AggregateCall call, List<String> fn) {

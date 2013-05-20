@@ -76,30 +76,29 @@ public class DrillImplementor {
     final ArrayNode queryNode = mapper.createArrayNode();
     rootNode.put("query", queryNode);
 
-    final ObjectNode sequenceOpNode = mapper.createObjectNode();
-    queryNode.add(sequenceOpNode);
-    sequenceOpNode.put("op", "sequence");
-
-    this.operatorsNode = mapper.createArrayNode();
-    sequenceOpNode.put("do", operatorsNode);
+    this.operatorsNode = queryNode;
   }
 
-  public void go(DrillRel root) {
-    root.implement(this);
+  public int go(DrillRel root) {
+    int inputId = root.implement(this);
 
     // Add a last node, to write to the output queue.
     final ObjectNode writeOp = mapper.createObjectNode();
     writeOp.put("op", "store");
+    writeOp.put("input", inputId);
     writeOp.put("storageengine", "queue");
     writeOp.put("memo", "output sink");
     QueueOutputInfo output = new QueueOutputInfo();
     output.number = 0;
     writeOp.put("target", mapper.convertValue(output, JsonNode.class));
-    add(writeOp);
+    return add(writeOp);
   }
 
-  public void add(ObjectNode operator) {
+  public int add(ObjectNode operator) {
     operatorsNode.add(operator);
+    final int id = operatorsNode.size();
+    operator.put("@id", id);
+    return id;
   }
 
   /** Returns the generated plan. */
@@ -109,8 +108,9 @@ public class DrillImplementor {
     return s;
   }
 
-  public void visitChild(DrillRel parent, int ordinal, RelNode child) {
+  public int visitChild(DrillRel parent, int ordinal, RelNode child) {
     ((DrillRel) child).implement(this);
+    return operatorsNode.size();
   }
 }
 

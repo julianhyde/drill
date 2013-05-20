@@ -207,10 +207,9 @@ public class JdbcTest extends TestCase {
             "{'head':{'type':'apache_drill_logical_plan','version':'1','generator':{'type':'manual','info':'na'}},"
             + "'storage':[{'name':'donuts-json','type':'classpath'},{'name':'queue','type':'queue'}],"
             + "'query':["
-            + "{'op':'sequence','do':["
-            + "{'op':'scan','memo':'initial_scan','ref':'_MAP','storageengine':'donuts-json','selection':{'path':'/donuts.json','type':'JSON'}},"
-            + "{'op':'project','projections':[{'expr':'_MAP.ppu','ref':'output.PPU'}]},"
-            + "{'op':'store','storageengine':'queue','memo':'output sink','target':{'number':0}}]}]}");
+            + "{'op':'scan','memo':'initial_scan','ref':'_MAP','storageengine':'donuts-json','selection':{'path':'/donuts.json','type':'JSON'},'@id':1},"
+            + "{'op':'project','input':1,'projections':[{'expr':'_MAP.ppu','ref':'output.PPU'}],'@id':2},"
+            + "{'op':'store','input':2,'storageengine':'queue','memo':'output sink','target':{'number':0},'@id':3}]}");
   }
 
   /** Query with subquery, filter, and projection of one real and one
@@ -233,12 +232,11 @@ public class JdbcTest extends TestCase {
         .planContains(
             "{'head':{'type':'apache_drill_logical_plan','version':'1','generator':{'type':'manual','info':'na'}},'storage':[{'name':'donuts-json','type':'classpath'},{'name':'queue','type':'queue'}],"
             + "'query':["
-            + "{'op':'sequence','do':["
-            + "{'op':'scan','memo':'initial_scan','ref':'_MAP','storageengine':'donuts-json','selection':{'path':'/donuts.json','type':'JSON'}},"
-            + "{'op':'filter','expr':'(_MAP.donuts.ppu > 0.6)'},"
-            + "{'op':'project','projections':[{'expr':'_MAP.donuts','ref':'output.D'}]},"
-            + "{'op':'project','projections':[{'expr':'D.name','ref':'output.NAME'},{'expr':'D.xx','ref':'output.XX'}]},"
-            + "{'op':'store','storageengine':'queue','memo':'output sink','target':{'number':0}}]}]}");
+            + "{'op':'scan','memo':'initial_scan','ref':'_MAP','storageengine':'donuts-json','selection':{'path':'/donuts.json','type':'JSON'},'@id':1},"
+            + "{'op':'filter','input':1,'expr':'(_MAP.donuts.ppu > 0.6)','@id':2},"
+            + "{'op':'project','input':2,'projections':[{'expr':'_MAP.donuts','ref':'output.D'}],'@id':3},"
+            + "{'op':'project','input':3,'projections':[{'expr':'D.name','ref':'output.NAME'},{'expr':'D.xx','ref':'output.XX'}],'@id':4},"
+            + "{'op':'store','input':4,'storageengine':'queue','memo':'output sink','target':{'number':0},'@id':5}]}");
   }
 
   /** Query that projects one field. (Disabled; uses sugared syntax.) */
