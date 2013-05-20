@@ -19,10 +19,11 @@ package org.apache.drill.jdbc.test;
 
 import com.google.common.base.Function;
 import junit.framework.Assert;
+import net.hydromatic.linq4j.Ord;
 import org.apache.drill.common.util.Hook;
 
 import java.sql.*;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Fluent interface for writing JDBC and query-planning tests.
@@ -37,19 +38,47 @@ public class JdbcAssert {
 
   static String toString(ResultSet resultSet) throws SQLException {
     StringBuilder buf = new StringBuilder();
+    final List<Ord<String>> columns = columnLabels(resultSet);
     while (resultSet.next()) {
-      int n = resultSet.getMetaData().getColumnCount();
       String sep = "";
-      for (int i = 1; i <= n; i++) {
+      for (Ord<String> column : columns) {
         buf.append(sep)
-            .append(resultSet.getMetaData().getColumnLabel(i))
+            .append(column.e)
             .append("=")
-            .append(resultSet.getObject(i));
+            .append(resultSet.getObject(column.i));
         sep = "; ";
       }
       buf.append("\n");
     }
     return buf.toString();
+  }
+
+  static List<String> toStrings(ResultSet resultSet) throws SQLException {
+    final List<String> list = new ArrayList<>();
+    StringBuilder buf = new StringBuilder();
+    final List<Ord<String>> columns = columnLabels(resultSet);
+    while (resultSet.next()) {
+      String sep = "";
+      buf.setLength(0);
+      for (Ord<String> column : columns) {
+        buf.append(sep)
+            .append(column.e)
+            .append("=")
+            .append(resultSet.getObject(column.i));
+        sep = "; ";
+      }
+      list.add(buf.toString());
+    }
+    return list;
+  }
+
+  private static List<Ord<String>> columnLabels(ResultSet resultSet)
+      throws SQLException {
+    int n = resultSet.getMetaData().getColumnCount();
+    List<Ord<String>> columns = new ArrayList<>(); for (int i = 1; i <= n; i++) {
+      columns.add(Ord.of(i, resultSet.getMetaData().getColumnLabel(i)));
+    }
+    return columns;
   }
 
   public static class One {
@@ -93,6 +122,7 @@ public class JdbcAssert {
       this.sql = sql;
     }
 
+    /** Checks that the current SQL statement returns the expected result. */
     public Two returns(String expected) throws Exception {
       Connection connection = null;
       Statement statement = null;
@@ -113,11 +143,36 @@ public class JdbcAssert {
       }
     }
 
+    /** Checks that the current SQL statement returns the expected result lines.
+     * Lines are compared unordered; the test succeeds if the query returns
+     * these lines in any order. */
+    public Two returnsUnordered(String... expecteds) throws Exception {
+      Connection connection = null;
+      Statement statement = null;
+      try {
+        connection = connectionFactory.createConnection();
+        statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sql);
+        Assert.assertEquals(
+            new TreeSet<>(Arrays.asList(expecteds)),
+            new TreeSet<>(JdbcAssert.toStrings(resultSet)));
+        resultSet.close();
+        return this;
+      } finally {
+        if (statement != null) {
+          statement.close();
+        }
+        if (connection != null) {
+          connection.close();
+        }
+      }
+    }
+
     public void planContains(String expected) {
       final String[] plan0 = {null};
       Connection connection = null;
       Statement statement = null;
-      Hook.Closeable x =
+      final Hook.Closeable x =
           Hook.LOGICAL_PLAN.add(
               new Function<String, Void>() {
                 public Void apply(String o) {
@@ -136,6 +191,22 @@ public class JdbcAssert {
         Assert.assertTrue(plan, plan.contains(expected2));
       } catch (Exception e) {
         throw new RuntimeException(e);
+      } finally {
+        if (statement != null) {
+          try {
+            statement.close();
+          } catch (SQLException e) {
+            // ignore
+          }
+        }
+        if (connection != null) {
+          try {
+            connection.close();
+          } catch (SQLException e) {
+            // ignore
+          }
+        }
+        x.close();
       }
     }
   }

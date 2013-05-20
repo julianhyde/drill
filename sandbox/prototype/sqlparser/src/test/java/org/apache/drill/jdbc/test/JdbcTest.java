@@ -76,6 +76,12 @@ public class JdbcTest extends TestCase {
       + "_MAP={batters={batter=[{id=1001, type=Regular}, {id=1002, type=Chocolate}, {id=1003, type=Blueberry}, {id=1004, type=Devil's Food}]}, filling=[{id=6001, type=None}, {id=6002, type=Raspberry}, {id=6003, type=Lemon}, {id=6004, type=Chocolate}, {id=6005, type=Kreme}], id=0004, name=Filled, ppu=0.69, sales=14, topping=[{id=5001, type=None}, {id=5002, type=Glazed}, {id=5005, type=Sugar}, {id=5007, type=Powdered Sugar}, {id=5006, type=Chocolate with Sprinkles}, {id=5003, type=Chocolate}, {id=5004, type=Maple}], type=donut}\n"
       + "_MAP={batters={batter=[{id=1001, type=Regular}]}, id=0005, name=Apple Fritter, ppu=1.0, sales=700, topping=[{id=5002, type=Glazed}], type=donut}\n";
 
+  /** Whether
+   * <a href="https://issues.apache.org/jira/browse/DRILL-61">DRILL-61</a>
+   * is fixed. When it is fixed, remove this constant enable the tests that are
+   * disabled because of it. */
+  private static final boolean BUG_DRILL_61_FIXED = false;
+
   /** Load driver. */
   public void testLoadDriver() throws ClassNotFoundException {
     Class.forName("org.apache.drill.jdbc.Driver");
@@ -258,49 +264,61 @@ public class JdbcTest extends TestCase {
   }
 
   public void testDistinct() throws Exception {
+    if (!BUG_DRILL_61_FIXED) {
+      return;
+    }
     JdbcAssert.withModel(MODEL, "HR")
         .sql("select distinct deptId from emp")
-        .returns("xxx\n");
-
-    // Enable when have implemented agg:
-    // .planContains("store");
+        .returnsUnordered("DEPTID=null",
+            "DEPTID=31",
+            "DEPTID=34",
+            "DEPTID=33")
+        .planContains("collapse");
   }
 
   public void testCountNoGroupBy() throws Exception {
+    if (!BUG_DRILL_61_FIXED) {
+      return;
+    }
     // 5 out of 6 employees have a not-null deptId
     JdbcAssert.withModel(MODEL, "HR")
         .sql("select count(deptId) as c from emp")
-        .returns("C=5\n");
-
-    // Enable when have implemented agg:
-    // .planContains("store");
+        .returns("C=5\n")
+        .planContains("collapse");
   }
 
   public void testDistinctCountNoGroupBy() throws Exception {
+    if (!BUG_DRILL_61_FIXED) {
+      return;
+    }
     JdbcAssert.withModel(MODEL, "HR")
         .sql("select count(distinct deptId) as c from emp")
-        .returns("C=4\n");
-
-    // Enable when have implemented agg:
-    // .planContains("store");
+        .returns("C=4\n")
+        .planContains("collapse");
   }
 
   public void testDistinctCountGroupByEmpty() throws Exception {
+    if (!BUG_DRILL_61_FIXED) {
+      return;
+    }
     JdbcAssert.withModel(MODEL, "HR")
         .sql("select count(distinct deptId) as c from emp group by ()")
-        .returns("C=4\n");
-
-    // Enable when have implemented agg:
-    // .planContains("store");
+        .returns("C=4\n")
+        .planContains("collapse");
   }
 
   public void testCount() throws Exception {
+    if (!BUG_DRILL_61_FIXED) {
+      return;
+    }
     JdbcAssert.withModel(MODEL, "HR")
-        .sql("select count(*) as c, deptId from emp group by deptId")
-        .returns("xxx\n");
-
-    // Enable when have implemented agg:
-    // .planContains("store");
+        .sql("select deptId, count(*) as c from emp group by deptId")
+        .returnsUnordered(
+            // will change when DRILL-61 fixed
+            "DEPTID=31; C=2",
+            "DEPTID=33; C=2",
+            "DEPTID=34; C=1")
+        .planContains("collapsingaggregate"); // make sure not using optiq
   }
 }
 

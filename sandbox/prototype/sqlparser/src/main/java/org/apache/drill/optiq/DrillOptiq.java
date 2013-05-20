@@ -38,6 +38,7 @@ public class DrillOptiq {
 
     planner.addRule(DrillFilterRule.INSTANCE);
     planner.addRule(DrillProjectRule.INSTANCE);
+    planner.addRule(DrillAggregateRule.INSTANCE);
 
     // Enable when https://issues.apache.org/jira/browse/DRILL-57 fixed
     if (false) planner.addRule(DrillValuesRule.INSTANCE);
