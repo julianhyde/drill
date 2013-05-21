@@ -17,6 +17,7 @@
  ******************************************************************************/
 package org.apache.drill.optiq;
 
+import net.hydromatic.linq4j.Ord;
 import org.eigenbase.rel.RelNode;
 import org.eigenbase.relopt.RelOptPlanner;
 import org.eigenbase.reltype.RelDataTypeField;
@@ -33,7 +34,6 @@ public class DrillOptiq {
     planner.addRule(EnumerableDrillRule.CUSTOM_INSTANCE);
 
 //    planner.addRule(DrillTableModificationConverterRule.INSTANCE);
-//    planner.addRule(DrillAggregateConverterRule.INSTANCE);
 //    planner.addRule(DrillCalcConverterRule.INSTANCE);
 
     planner.addRule(DrillFilterRule.INSTANCE);
@@ -43,7 +43,7 @@ public class DrillOptiq {
     // Enable when https://issues.apache.org/jira/browse/DRILL-57 fixed
     if (false) planner.addRule(DrillValuesRule.INSTANCE);
 //    planner.addRule(DrillSortRule.INSTANCE);
-//    planner.addRule(DrillJoinRule.INSTANCE);
+    planner.addRule(DrillJoinRule.INSTANCE);
 //    planner.addRule(DrillUnionRule.INSTANCE);
 //    planner.addRule(AbstractConverter.ExpandConversionRule.instance);
   }
@@ -77,6 +77,14 @@ public class DrillOptiq {
             .append(" ");
         return call.getOperandList().get(1).accept(this)
             .append(")");
+      case Function:
+        buf.append(call.getOperator().getName().toLowerCase())
+            .append("(");
+        for (Ord<RexNode> operand : Ord.zip(call.getOperandList())) {
+          buf.append(operand.i > 0 ? ", " : "");
+          operand.e.accept(this);
+        }
+        return buf.append(")");
       case Special:
         switch (call.getKind()) {
         case Cast:

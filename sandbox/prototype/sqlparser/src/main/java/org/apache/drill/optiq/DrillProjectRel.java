@@ -71,13 +71,12 @@ public class DrillProjectRel extends ProjectRelBase implements DrillRel {
     project.put("input", inputId);
     final ArrayNode transforms = implementor.mapper.createArrayNode();
     project.put("projections", transforms);
-    final String prefix = "output.";
     for (Pair<RexNode, String> pair : projects()) {
       final ObjectNode objectNode = implementor.mapper.createObjectNode();
       transforms.add(objectNode);
       String expr = DrillOptiq.toDrill(getChild(), pair.left);
       objectNode.put("expr", expr);
-      String ref = prefix + pair.right;
+      String ref = "output." + pair.right;
       objectNode.put("ref", ref);
     }
     return implementor.add(project);

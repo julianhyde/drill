@@ -40,13 +40,11 @@ public class JdbcAssert {
     StringBuilder buf = new StringBuilder();
     final List<Ord<String>> columns = columnLabels(resultSet);
     while (resultSet.next()) {
-      String sep = "";
       for (Ord<String> column : columns) {
-        buf.append(sep)
+        buf.append(column.i == 1 ? "" : "; ")
             .append(column.e)
             .append("=")
             .append(resultSet.getObject(column.i));
-        sep = "; ";
       }
       buf.append("\n");
     }
@@ -58,14 +56,12 @@ public class JdbcAssert {
     StringBuilder buf = new StringBuilder();
     final List<Ord<String>> columns = columnLabels(resultSet);
     while (resultSet.next()) {
-      String sep = "";
       buf.setLength(0);
       for (Ord<String> column : columns) {
-        buf.append(sep)
+        buf.append(column.i == 1 ? "" : "; ")
             .append(column.e)
             .append("=")
             .append(resultSet.getObject(column.i));
-        sep = "; ";
       }
       list.add(buf.toString());
     }
@@ -75,7 +71,8 @@ public class JdbcAssert {
   private static List<Ord<String>> columnLabels(ResultSet resultSet)
       throws SQLException {
     int n = resultSet.getMetaData().getColumnCount();
-    List<Ord<String>> columns = new ArrayList<>(); for (int i = 1; i <= n; i++) {
+    List<Ord<String>> columns = new ArrayList<>();
+    for (int i = 1; i <= n; i++) {
       columns.add(Ord.of(i, resultSet.getMetaData().getColumnLabel(i)));
     }
     return columns;
@@ -154,8 +151,8 @@ public class JdbcAssert {
         statement = connection.createStatement();
         ResultSet resultSet = statement.executeQuery(sql);
         Assert.assertEquals(
-            new TreeSet<>(Arrays.asList(expecteds)),
-            new TreeSet<>(JdbcAssert.toStrings(resultSet)));
+            unsortedList(Arrays.asList(expecteds)),
+            unsortedList(JdbcAssert.toStrings(resultSet)));
         resultSet.close();
         return this;
       } finally {
@@ -166,6 +163,14 @@ public class JdbcAssert {
           connection.close();
         }
       }
+    }
+
+    private SortedSet<String> unsortedList(List<String> strings) {
+      final SortedSet<String> set = new TreeSet<>();
+      for (String string : strings) {
+        set.add(string + "\n");
+      }
+      return set;
     }
 
     public void planContains(String expected) {

@@ -58,7 +58,7 @@ public class JdbcTest extends TestCase {
       + "         {\n"
       + "           name: 'EMP',\n"
       + "           type: 'view',\n"
-      + "           sql: 'select _MAP[\\'deptId\\'] as deptid, _MAP[\\'lastName\\'] as lastName from employees'\n"
+      + "           sql: 'select _MAP[\\'deptId\\'] as deptid, cast(_MAP[\\'lastName\\'] as varchar) as lastName from employees'\n"
       + "         },\n"
       + "         {\n"
       + "           name: 'DEPT',\n"
@@ -136,22 +136,21 @@ public class JdbcTest extends TestCase {
     JdbcAssert.withModel(MODEL, "HR")
         .sql("select * from employees")
         .returns("_MAP={deptId=31, lastName=Rafferty}\n"
-            + "_MAP={deptId=33, lastName=Jones}\n"
-            + "_MAP={deptId=33, lastName=Steinberg}\n"
-            + "_MAP={deptId=34, lastName=Robinson}\n"
-            + "_MAP={deptId=34, lastName=Smith}\n"
-            + "_MAP={lastName=John}\n");
+                 + "_MAP={deptId=33, lastName=Jones}\n"
+                 + "_MAP={deptId=33, lastName=Steinberg}\n"
+                 + "_MAP={deptId=34, lastName=Robinson}\n"
+                 + "_MAP={deptId=34, lastName=Smith}\n"
+                 + "_MAP={lastName=John}\n");
   }
 
   /** Simple query against EMP table in HR database. */
   public void testSelectEmpView() throws Exception {
     JdbcAssert.withModel(MODEL, "HR")
         .sql("select * from emp")
-        .returns("DEPTID=31; LASTNAME=Rafferty\n"
-            + "DEPTID=33; LASTNAME=Jones\n"
+        .returns(
+            "DEPTID=31; LASTNAME=Rafferty\n" + "DEPTID=33; LASTNAME=Jones\n"
             + "DEPTID=33; LASTNAME=Steinberg\n"
-            + "DEPTID=34; LASTNAME=Robinson\n"
-            + "DEPTID=34; LASTNAME=Smith\n"
+            + "DEPTID=34; LASTNAME=Robinson\n" + "DEPTID=34; LASTNAME=Smith\n"
             + "DEPTID=null; LASTNAME=John\n");
   }
 
@@ -160,9 +159,9 @@ public class JdbcTest extends TestCase {
     JdbcAssert.withModel(MODEL, "HR")
         .sql("select * from departments")
         .returns("_MAP={deptId=31, name=Sales}\n"
-            + "_MAP={deptId=33, name=Engineering}\n"
-            + "_MAP={deptId=34, name=Clerical}\n"
-            + "_MAP={deptId=35, name=Marketing}\n");
+                 + "_MAP={deptId=33, name=Engineering}\n"
+                 + "_MAP={deptId=34, name=Clerical}\n"
+                 + "_MAP={deptId=35, name=Marketing}\n");
   }
 
   /** Query with project list. No field references yet. */
@@ -278,10 +277,7 @@ public class JdbcTest extends TestCase {
     }
     JdbcAssert.withModel(MODEL, "HR")
         .sql("select distinct deptId from emp")
-        .returnsUnordered("DEPTID=null",
-            "DEPTID=31",
-            "DEPTID=34",
-            "DEPTID=33")
+        .returnsUnordered("DEPTID=null", "DEPTID=31", "DEPTID=34", "DEPTID=33")
         .planContains("collapse");
   }
 
@@ -328,6 +324,76 @@ public class JdbcTest extends TestCase {
             "DEPTID=33; C=2",
             "DEPTID=34; C=1")
         .planContains("collapsingaggregate"); // make sure not using optiq
+  }
+
+  public void testJoin() throws Exception {
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql("select * from emp join dept on emp.deptId = dept.deptId")
+        .returnsUnordered(
+            "DEPTID=31; LASTNAME=Rafferty; DEPTID0=31; NAME=Sales",
+            "DEPTID=33; LASTNAME=Jones; DEPTID0=33; NAME=Engineering",
+            "DEPTID=33; LASTNAME=Steinberg; DEPTID0=33; NAME=Engineering",
+            "DEPTID=34; LASTNAME=Robinson; DEPTID0=34; NAME=Clerical",
+            "DEPTID=34; LASTNAME=Smith; DEPTID0=34; NAME=Clerical")
+        .planContains("'type':'inner'");
+  }
+
+  public void testLeftJoin() throws Exception {
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql("select * from emp left join dept on emp.deptId = dept.deptId")
+        .returnsUnordered(
+            "DEPTID=31; LASTNAME=Rafferty; DEPTID0=31; NAME=Sales",
+            "DEPTID=33; LASTNAME=Jones; DEPTID0=33; NAME=Engineering",
+            "DEPTID=33; LASTNAME=Steinberg; DEPTID0=33; NAME=Engineering",
+            "DEPTID=34; LASTNAME=Robinson; DEPTID0=34; NAME=Clerical",
+            "DEPTID=34; LASTNAME=Smith; DEPTID0=34; NAME=Clerical",
+            "DEPTID=null; LASTNAME=John; DEPTID0=null; NAME=null")
+        .planContains("'type':'left'");
+  }
+
+  /** Right join is tricky because Drill's "join" operator only supports "left",
+   * so we have to flip inputs. */
+  public void _testRightJoin() throws Exception {
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql("select * from emp right join dept on emp.deptId = dept.deptId")
+        .returnsUnordered("xx")
+        .planContains("'type':'left'");
+  }
+
+  public void testFullJoin() throws Exception {
+    // The output is wrong, per DRILL-64. Will need to update the output when
+    // that bug is fixed.
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql("select * from emp full join dept on emp.deptId = dept.deptId")
+        .returnsUnordered(
+            "DEPTID=31; LASTNAME=Rafferty; DEPTID0=31; NAME=Sales",
+            "DEPTID=33; LASTNAME=Jones; DEPTID0=33; NAME=Engineering",
+            "DEPTID=33; LASTNAME=Steinberg; DEPTID0=33; NAME=Engineering",
+            "DEPTID=34; LASTNAME=Robinson; DEPTID0=34; NAME=Clerical",
+            "DEPTID=34; LASTNAME=Smith; DEPTID0=34; NAME=Clerical",
+            "DEPTID=null; LASTNAME=John; DEPTID0=null; NAME=null",
+            "DEPTID=null; LASTNAME=null; DEPTID0=31; NAME=Sales",
+            "DEPTID=null; LASTNAME=null; DEPTID0=33; NAME=Engineering",
+            "DEPTID=null; LASTNAME=null; DEPTID0=34; NAME=Clerical",
+            "DEPTID=null; LASTNAME=null; DEPTID0=35; NAME=Marketing")
+        .planContains("'type':'outer'");
+  }
+
+  /** Join on subquery; also tests that if a field of the same name exists in
+   * both inputs, both fields make it through the join. */
+  public void testJoinOnSubquery() throws Exception {
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql(
+            "select * from (\n"
+             + "select deptId, lastname, 'x' as name from emp) as e\n"
+             + " join dept on e.deptId = dept.deptId")
+        .returnsUnordered(
+            "DEPTID=31; LASTNAME=Rafferty; NAME=x; DEPTID0=31; NAME0=Sales",
+            "DEPTID=33; LASTNAME=Jones; NAME=x; DEPTID0=33; NAME0=Engineering",
+            "DEPTID=33; LASTNAME=Steinberg; NAME=x; DEPTID0=33; NAME0=Engineering",
+            "DEPTID=34; LASTNAME=Robinson; NAME=x; DEPTID0=34; NAME0=Clerical",
+            "DEPTID=34; LASTNAME=Smith; NAME=x; DEPTID0=34; NAME0=Clerical")
+        .planContains("'type':'inner'");
   }
 }
 
