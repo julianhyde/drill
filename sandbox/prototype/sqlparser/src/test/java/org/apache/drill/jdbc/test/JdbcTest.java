@@ -461,6 +461,20 @@ public class JdbcTest extends TestCase {
             "DEPTID=null")
         .planContains("'op':'union','distinct':true");
   }
+
+  public void testOrderBy() throws Exception {
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql(
+            "select * from emp order by deptId desc nulls first")
+        .returns(
+            "DEPTID=34; LASTNAME=Robinson\n"
+            + "DEPTID=34; LASTNAME=Smith\n"
+            + "DEPTID=33; LASTNAME=Jones\n"
+            + "DEPTID=33; LASTNAME=Steinberg\n"
+            + "DEPTID=31; LASTNAME=Rafferty\n"
+            + "DEPTID=null; LASTNAME=John\n")
+        .planContains("'op':'order'");
+  }
 }
 
 // End JdbcTest.java
