@@ -66,6 +66,21 @@ public class JdbcTest extends TestCase {
       + "           sql: 'select _MAP[\\'deptId\\'] as deptid, _MAP[\\'name\\'] as name from departments'\n"
       + "         }\n"
       + "       ]\n"
+      + "     },\n"
+      + "     {\n"
+      + "       name: 'FOODMART',\n"
+      + "       tables: [\n"
+      + "         {\n"
+      + "           name: 'PRODUCT_CLASS',\n"
+      + "           type: 'custom',\n"
+      + "           factory: '" + DrillTable.Factory.class.getName() + "'\n"
+      + "         },\n"
+      + "         {\n"
+      + "           name: 'TIME_BY_DAY',\n"
+      + "           type: 'custom',\n"
+      + "           factory: '" + DrillTable.Factory.class.getName() + "'\n"
+      + "         }\n"
+      + "       ]\n"
       + "     }\n"
       + "   ]\n"
       + "}";
@@ -394,6 +409,15 @@ public class JdbcTest extends TestCase {
             "DEPTID=34; LASTNAME=Robinson; NAME=x; DEPTID0=34; NAME0=Clerical",
             "DEPTID=34; LASTNAME=Smith; NAME=x; DEPTID0=34; NAME0=Clerical")
         .planContains("'type':'inner'");
+  }
+
+  /** Tests that one of the FoodMart tables is present. */
+  public void testFoodMart() throws Exception {
+    JdbcAssert.withModel(MODEL, "FOODMART")
+        .sql("select * from product_class where cast(_map['product_class_id'] as integer) < 3")
+        .returnsUnordered(
+            "_MAP={product_category=Seafood, product_class_id=2, product_department=Seafood, product_family=Food, product_subcategory=Shellfish}",
+            "_MAP={product_category=Specialty, product_class_id=1, product_department=Produce, product_family=Food, product_subcategory=Nuts}");
   }
 }
 

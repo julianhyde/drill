@@ -13,6 +13,20 @@
 	
 	<name>Logical Plan Execution Reference Implementation</name>
 
+	<repositories>
+		<repository>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+				<checksumPolicy>warn</checksumPolicy>
+			</releases>
+			<id>conjars</id>
+			<name>Conjars</name>
+			<url>http://conjars.org/repo</url>
+			<layout>default</layout>
+		</repository>
+	</repositories>
+
 	<dependencies>
 
 		<dependency>
@@ -43,7 +57,37 @@
 			<version>0.4.2</version>
 		</dependency>
 
+		<dependency>
+			<groupId>pentaho</groupId>
+			<artifactId>mondrian-data-foodmart-json</artifactId>
+			<version>0.1</version>
+		</dependency>
 	</dependencies>
 
-
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>install</phase>
+						<goals>
+							<goal>unpack</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>pentaho</groupId>
+									<artifactId>mondrian-data-foodmart-json</artifactId>
+									<version>0.1</version>
+									<includes>*.json</includes>
+									<outputDirectory>target/test-classes</outputDirectory>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 </project>

@@ -18,8 +18,7 @@
 package org.apache.drill.jdbc;
 
 import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.*;
 
 import net.hydromatic.linq4j.BaseQueryable;
 import net.hydromatic.linq4j.Enumerator;
@@ -119,6 +118,21 @@ public class DrillTable extends BaseQueryable<Object>
   /** Factory for custom tables in Optiq schema. */
   @SuppressWarnings("UnusedDeclaration")
   public static class Factory implements TableFactory<DrillTable> {
+
+    private static final List<String> DONUTS_TABLES = Arrays.asList(
+        "DONUTS");
+
+    private static final List<String> HR_TABLES = Arrays.asList(
+        "EMPLOYEES", "DEPARTMENTS");
+
+    private static final List<String> FOODMART_TABLES = Arrays.asList(
+        "ACCOUNT", "CATEGORY", "CURRENCY", "CUSTOMER", "DAYS", "DEPARTMENT",
+        "EMPLOYEE_CLOSURE", "EMPLOYEE", "EXPENSE_FACT", "INVENTORY_FACT_1997",
+        "INVENTORY_FACT_1998", "POSITION", "PRODUCT_CLASS", "PRODUCT",
+        "PROMOTION", "REGION", "RESERVE_EMPLOYEE", "SALARY", "SALES_FACT_1997",
+        "SALES_FACT_1998", "SALES_FACT_DEC_1998", "STORE", "STORE_RAGGED",
+        "TIME_BY_DAY", "WAREHOUSE", "WAREHOUSE_CLASS");
+
     public DrillTable create(
         JavaTypeFactory typeFactory,
         Schema schema,
@@ -128,9 +142,14 @@ public class DrillTable extends BaseQueryable<Object>
       final ClasspathRSE.ClasspathRSEConfig rseConfig =
           new ClasspathRSE.ClasspathRSEConfig("donuts-json");
       final ClasspathInputConfig inputConfig = new ClasspathInputConfig();
-      assert Arrays.asList("DONUTS", "EMPLOYEES", "DEPARTMENTS").contains(name)
+      assert DONUTS_TABLES.contains(name)
+          || HR_TABLES.contains(name)
+          || FOODMART_TABLES.contains(name)
           : name;
       inputConfig.path = "/" + name.toLowerCase() + ".json";
+//      if (name.equals("TIME_BY_DAY")) {
+//        inputConfig.path = "/foodmart/" + name.toLowerCase() + ".json";
+//      }
       inputConfig.type = DataWriter.ConverterType.JSON;
       return createTable(typeFactory, (MutableSchema) schema, name, rseConfig,
           inputConfig);
