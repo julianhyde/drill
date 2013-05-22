@@ -98,6 +98,12 @@ public class JdbcTest extends TestCase {
    * disabled because of it. */
   private static final boolean BUG_DRILL_61_FIXED = false;
 
+  /** Whether
+   * <a href="https://issues.apache.org/jira/browse/DRILL-61">DRILL-65</a>
+   * is fixed. When it is fixed, remove this constant enable the tests that are
+   * disabled because of it. */
+  private static final boolean BUG_DRILL_65_FIXED = false;
+
   /**
    * Command-line utility to execute a logical plan.
    *
@@ -418,6 +424,42 @@ public class JdbcTest extends TestCase {
         .returnsUnordered(
             "_MAP={product_category=Seafood, product_class_id=2, product_department=Seafood, product_family=Food, product_subcategory=Shellfish}",
             "_MAP={product_category=Specialty, product_class_id=1, product_department=Produce, product_family=Food, product_subcategory=Nuts}");
+  }
+
+  public void testUnionAll() throws Exception {
+    if (!BUG_DRILL_65_FIXED) {
+      return;
+    }
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql(
+            "select deptId from dept\n"
+            + "union all\n"
+            + "select deptId from emp")
+        .returnsUnordered(
+            "DEPTID=31",
+            "DEPTID=33",
+            "DEPTID=34",
+            "DEPTID=35",
+            "DEPTID=null")
+        .planContains("'op':'union','distinct':false");
+  }
+
+  public void testUnion() throws Exception {
+    if (!BUG_DRILL_65_FIXED) {
+      return;
+    }
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql(
+            "select deptId from dept\n"
+            + "union\n"
+            + "select deptId from emp")
+        .returnsUnordered(
+            "DEPTID=31",
+            "DEPTID=33",
+            "DEPTID=34",
+            "DEPTID=35",
+            "DEPTID=null")
+        .planContains("'op':'union','distinct':true");
   }
 }
 

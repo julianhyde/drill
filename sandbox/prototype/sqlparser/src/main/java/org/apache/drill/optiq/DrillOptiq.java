@@ -44,7 +44,7 @@ public class DrillOptiq {
     if (false) planner.addRule(DrillValuesRule.INSTANCE);
 //    planner.addRule(DrillSortRule.INSTANCE);
     planner.addRule(DrillJoinRule.INSTANCE);
-//    planner.addRule(DrillUnionRule.INSTANCE);
+    planner.addRule(DrillUnionRule.INSTANCE);
 //    planner.addRule(AbstractConverter.ExpandConversionRule.instance);
   }
 

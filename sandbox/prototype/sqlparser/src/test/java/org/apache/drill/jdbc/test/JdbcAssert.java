@@ -173,7 +173,7 @@ public class JdbcAssert {
       return set;
     }
 
-    public void planContains(String expected) {
+    public Two planContains(String expected) {
       final String[] plan0 = {null};
       Connection connection = null;
       Statement statement = null;
@@ -194,6 +194,7 @@ public class JdbcAssert {
         // double quotes
         String expected2 = expected.replace("'", "\"");
         Assert.assertTrue(plan, plan.contains(expected2));
+        return this;
       } catch (Exception e) {
         throw new RuntimeException(e);
       } finally {
