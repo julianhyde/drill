@@ -147,9 +147,6 @@ public class DrillTable extends BaseQueryable<Object>
           || FOODMART_TABLES.contains(name)
           : name;
       inputConfig.path = "/" + name.toLowerCase() + ".json";
-//      if (name.equals("TIME_BY_DAY")) {
-//        inputConfig.path = "/foodmart/" + name.toLowerCase() + ".json";
-//      }
       inputConfig.type = DataWriter.ConverterType.JSON;
       return createTable(typeFactory, (MutableSchema) schema, name, rseConfig,
           inputConfig);
