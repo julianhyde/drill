@@ -18,8 +18,12 @@
 package org.apache.drill.optiq;
 
 import org.eigenbase.rel.AggregateRel;
+import org.eigenbase.rel.InvalidRelException;
 import org.eigenbase.rel.RelNode;
 import org.eigenbase.relopt.*;
+import org.eigenbase.trace.EigenbaseTrace;
+
+import java.util.logging.Logger;
 
 /**
  * Rule that converts an {@link AggregateRel} to
@@ -29,6 +33,7 @@ import org.eigenbase.relopt.*;
  */
 public class DrillAggregateRule extends RelOptRule {
   public static final RelOptRule INSTANCE = new DrillAggregateRule();
+  protected static final Logger tracer = EigenbaseTrace.getPlannerTracer();
 
   private DrillAggregateRule() {
     super(
@@ -46,10 +51,14 @@ public class DrillAggregateRule extends RelOptRule {
     final RelTraitSet traits =
         aggregate.getTraitSet().plus(DrillRel.CONVENTION);
     final RelNode convertedInput = convert(input, traits);
-    call.transformTo(
-        new DrillAggregateRel(
-            aggregate.getCluster(), traits, convertedInput,
-            aggregate.getGroupSet(), aggregate.getAggCallList()));
+    try {
+      call.transformTo(
+          new DrillAggregateRel(
+              aggregate.getCluster(), traits, convertedInput,
+              aggregate.getGroupSet(), aggregate.getAggCallList()));
+    } catch (InvalidRelException e) {
+      tracer.warning(e.toString());
+    }
   }
 }
 

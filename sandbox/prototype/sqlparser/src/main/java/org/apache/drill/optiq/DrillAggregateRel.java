@@ -35,14 +35,25 @@ import java.util.List;
 public class DrillAggregateRel extends AggregateRelBase implements DrillRel {
   /** Creates a DrillAggregateRel. */
   public DrillAggregateRel(RelOptCluster cluster, RelTraitSet traits,
-      RelNode child, BitSet groupSet, List<AggregateCall> aggCalls) {
+      RelNode child, BitSet groupSet, List<AggregateCall> aggCalls)
+      throws InvalidRelException {
     super(cluster, traits, child, groupSet, aggCalls);
+    for (AggregateCall aggCall : aggCalls) {
+      if (aggCall.isDistinct()) {
+        throw new InvalidRelException(
+          "DrillAggregateRel does not support DISTINCT aggregates");
+      }
+    }
   }
 
   @Override
   public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
-    return new DrillAggregateRel(getCluster(), traitSet, sole(inputs),
-        getGroupSet(), aggCalls);
+    try {
+      return new DrillAggregateRel(getCluster(), traitSet, sole(inputs),
+          getGroupSet(), aggCalls);
+    } catch (InvalidRelException e) {
+      throw new AssertionError(e);
+    }
   }
 
   @Override
@@ -77,8 +88,11 @@ public class DrillAggregateRel extends AggregateRelBase implements DrillRel {
       exprs.add(childFields.get(group));
     }
 
+    final int segmentId = implementor.add(segment);
+
     final ObjectNode aggregate = implementor.mapper.createObjectNode();
     aggregate.put("op", "collapsingaggregate");
+    aggregate.put("input", segmentId);
     aggregate.put("within", "segment");
     final ArrayNode carryovers = implementor.mapper.createArrayNode();
     aggregate.put("carryovers", carryovers);
@@ -94,7 +108,6 @@ public class DrillAggregateRel extends AggregateRelBase implements DrillRel {
       aggregations.add(aggregation);
     }
 
-    implementor.add(segment);
     return implementor.add(aggregate);
   }
 

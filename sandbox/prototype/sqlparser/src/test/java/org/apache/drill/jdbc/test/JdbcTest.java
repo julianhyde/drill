@@ -92,18 +92,6 @@ public class JdbcTest extends TestCase {
       + "_MAP={batters={batter=[{id=1001, type=Regular}, {id=1002, type=Chocolate}, {id=1003, type=Blueberry}, {id=1004, type=Devil's Food}]}, filling=[{id=6001, type=None}, {id=6002, type=Raspberry}, {id=6003, type=Lemon}, {id=6004, type=Chocolate}, {id=6005, type=Kreme}], id=0004, name=Filled, ppu=0.69, sales=14, topping=[{id=5001, type=None}, {id=5002, type=Glazed}, {id=5005, type=Sugar}, {id=5007, type=Powdered Sugar}, {id=5006, type=Chocolate with Sprinkles}, {id=5003, type=Chocolate}, {id=5004, type=Maple}], type=donut}\n"
       + "_MAP={batters={batter=[{id=1001, type=Regular}]}, id=0005, name=Apple Fritter, ppu=1.0, sales=700, topping=[{id=5002, type=Glazed}], type=donut}\n";
 
-  /** Whether
-   * <a href="https://issues.apache.org/jira/browse/DRILL-61">DRILL-61</a>
-   * is fixed. When it is fixed, remove this constant enable the tests that are
-   * disabled because of it. */
-  private static final boolean BUG_DRILL_61_FIXED = false;
-
-  /** Whether
-   * <a href="https://issues.apache.org/jira/browse/DRILL-61">DRILL-65</a>
-   * is fixed. When it is fixed, remove this constant enable the tests that are
-   * disabled because of it. */
-  private static final boolean BUG_DRILL_65_FIXED = false;
-
   /**
    * Command-line utility to execute a logical plan.
    *
@@ -293,58 +281,54 @@ public class JdbcTest extends TestCase {
   }
 
   public void testDistinct() throws Exception {
-    if (!BUG_DRILL_61_FIXED) {
-      return;
-    }
     JdbcAssert.withModel(MODEL, "HR")
         .sql("select distinct deptId from emp")
-        .returnsUnordered("DEPTID=null", "DEPTID=31", "DEPTID=34", "DEPTID=33")
-        .planContains("collapse");
+        .returnsUnordered(
+            "DEPTID=null",
+            "DEPTID=31",
+            "DEPTID=34",
+            "DEPTID=33")
+        .planContains("\"op\":\"collapsingaggregate\"");
   }
 
   public void testCountNoGroupBy() throws Exception {
-    if (!BUG_DRILL_61_FIXED) {
-      return;
-    }
     // 5 out of 6 employees have a not-null deptId
     JdbcAssert.withModel(MODEL, "HR")
-        .sql("select count(deptId) as c from emp")
-        .returns("C=5\n")
-        .planContains("collapse");
+        .sql("select count(deptId) as cd, count(*) as c from emp")
+        .returns("CD=5; C=6\n")
+        .planContains("\"op\":\"collapsingaggregate\"");
   }
 
   public void testDistinctCountNoGroupBy() throws Exception {
-    if (!BUG_DRILL_61_FIXED) {
-      return;
-    }
     JdbcAssert.withModel(MODEL, "HR")
         .sql("select count(distinct deptId) as c from emp")
-        .returns("C=4\n")
-        .planContains("collapse");
+        .returns("C=3\n")
+        .planContains("\"op\":\"collapsingaggregate\"");
   }
 
   public void testDistinctCountGroupByEmpty() throws Exception {
-    if (!BUG_DRILL_61_FIXED) {
-      return;
-    }
     JdbcAssert.withModel(MODEL, "HR")
         .sql("select count(distinct deptId) as c from emp group by ()")
-        .returns("C=4\n")
-        .planContains("collapse");
+        .returns("C=3\n")
+        .planContains("\"op\":\"collapsingaggregate\"");
+  }
+
+  public void testCountNull() throws Exception {
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql("select count(distinct deptId) as c from emp group by ()")
+        .returns("C=3\n")
+        .planContains("\"op\":\"collapsingaggregate\"");
   }
 
   public void testCount() throws Exception {
-    if (!BUG_DRILL_61_FIXED) {
-      return;
-    }
     JdbcAssert.withModel(MODEL, "HR")
         .sql("select deptId, count(*) as c from emp group by deptId")
         .returnsUnordered(
-            // will change when DRILL-61 fixed
-            "DEPTID=31; C=2",
+            "DEPTID=31; C=1",
             "DEPTID=33; C=2",
-            "DEPTID=34; C=1")
-        .planContains("collapsingaggregate"); // make sure not using optiq
+            "DEPTID=34; C=2",
+            "DEPTID=null; C=1")
+        .planContains("\"op\":\"collapsingaggregate\""); // make sure using drill
   }
 
   public void testJoin() throws Exception {
@@ -382,8 +366,6 @@ public class JdbcTest extends TestCase {
   }
 
   public void testFullJoin() throws Exception {
-    // The output is wrong, per DRILL-64. Will need to update the output when
-    // that bug is fixed.
     JdbcAssert.withModel(MODEL, "HR")
         .sql("select * from emp full join dept on emp.deptId = dept.deptId")
         .returnsUnordered(
@@ -393,9 +375,6 @@ public class JdbcTest extends TestCase {
             "DEPTID=34; LASTNAME=Robinson; DEPTID0=34; NAME=Clerical",
             "DEPTID=34; LASTNAME=Smith; DEPTID0=34; NAME=Clerical",
             "DEPTID=null; LASTNAME=John; DEPTID0=null; NAME=null",
-            "DEPTID=null; LASTNAME=null; DEPTID0=31; NAME=Sales",
-            "DEPTID=null; LASTNAME=null; DEPTID0=33; NAME=Engineering",
-            "DEPTID=null; LASTNAME=null; DEPTID0=34; NAME=Clerical",
             "DEPTID=null; LASTNAME=null; DEPTID0=35; NAME=Marketing")
         .planContains("'type':'outer'");
   }
@@ -427,9 +406,6 @@ public class JdbcTest extends TestCase {
   }
 
   public void testUnionAll() throws Exception {
-    if (!BUG_DRILL_65_FIXED) {
-      return;
-    }
     JdbcAssert.withModel(MODEL, "HR")
         .sql(
             "select deptId from dept\n"
@@ -445,9 +421,6 @@ public class JdbcTest extends TestCase {
   }
 
   public void testUnion() throws Exception {
-    if (!BUG_DRILL_65_FIXED) {
-      return;
-    }
     JdbcAssert.withModel(MODEL, "HR")
         .sql(
             "select deptId from dept\n"
@@ -463,9 +436,22 @@ public class JdbcTest extends TestCase {
   }
 
   public void testOrderBy() throws Exception {
+    // desc nulls last
     JdbcAssert.withModel(MODEL, "HR")
         .sql(
             "select * from emp order by deptId desc nulls first")
+        .returns(
+            "DEPTID=null; LASTNAME=John\n"
+            + "DEPTID=34; LASTNAME=Robinson\n"
+            + "DEPTID=34; LASTNAME=Smith\n"
+            + "DEPTID=33; LASTNAME=Jones\n"
+            + "DEPTID=33; LASTNAME=Steinberg\n"
+            + "DEPTID=31; LASTNAME=Rafferty\n")
+        .planContains("'op':'order'");
+    // desc nulls first
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql(
+            "select * from emp order by deptId desc nulls last")
         .returns(
             "DEPTID=34; LASTNAME=Robinson\n"
             + "DEPTID=34; LASTNAME=Smith\n"
@@ -473,6 +459,30 @@ public class JdbcTest extends TestCase {
             + "DEPTID=33; LASTNAME=Steinberg\n"
             + "DEPTID=31; LASTNAME=Rafferty\n"
             + "DEPTID=null; LASTNAME=John\n")
+        .planContains("'op':'order'");
+    // desc is implicitly "nulls first"
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql(
+            "select * from emp order by deptId desc")
+        .returns(
+            "DEPTID=null; LASTNAME=John\n"
+            + "DEPTID=34; LASTNAME=Robinson\n"
+            + "DEPTID=34; LASTNAME=Smith\n"
+            + "DEPTID=33; LASTNAME=Jones\n"
+            + "DEPTID=33; LASTNAME=Steinberg\n"
+            + "DEPTID=31; LASTNAME=Rafferty\n")
+        .planContains("'op':'order'");
+    // no sort order specified is implicitly "asc", and asc is "nulls last"
+    JdbcAssert.withModel(MODEL, "HR")
+        .sql(
+            "select * from emp order by deptId")
+        .returns(
+            "DEPTID=null; LASTNAME=John\n"
+            + "DEPTID=31; LASTNAME=Rafferty\n"
+            + "DEPTID=33; LASTNAME=Jones\n"
+            + "DEPTID=33; LASTNAME=Steinberg\n"
+            + "DEPTID=34; LASTNAME=Robinson\n"
+            + "DEPTID=34; LASTNAME=Smith\n")
         .planContains("'op':'order'");
   }
 }

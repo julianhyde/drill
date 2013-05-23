@@ -68,6 +68,14 @@ public class DrillSortRel extends SortRel implements DrillRel {
       final ObjectNode ordering = implementor.mapper.createObjectNode();
       ordering.put("order", toDrill(collation.e));
       ordering.put("expr", childFields.get(collation.e.getFieldIndex()));
+      switch (collation.e.nullDirection) {
+      case FIRST:
+        ordering.put("nullCollation", "first");
+        break;
+      case LAST:
+        ordering.put("nullCollation", "last");
+        break;
+      }
       orderings.add(ordering);
     }
 
