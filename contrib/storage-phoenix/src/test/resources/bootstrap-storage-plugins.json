@@ -1,0 +1,8 @@
+{
+  "storage":{
+    phoenix : {
+      type:"phoenix",
+      url:"jdbc:phoenix:localhost"
+    }
+  }
+}
