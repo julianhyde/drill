@@ -22,14 +22,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.calcite.config.Lex;
+import org.apache.calcite.plan.ConventionTraitDef;
+import org.apache.calcite.plan.RelOptCostFactory;
+import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.plan.hep.HepPlanner;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.rules.ProjectToWindowRule;
+import org.apache.calcite.rel.rules.ReduceExpressionsRule;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.parser.SqlParseException;
+import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 import org.apache.calcite.tools.RelConversionException;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.tools.ValidationException;
-
 import org.apache.drill.common.exceptions.UserException;
 import org.apache.drill.exec.ops.QueryContext;
 import org.apache.drill.exec.physical.PhysicalPlan;
@@ -52,16 +61,6 @@ import org.apache.drill.exec.testing.ControlsInjector;
 import org.apache.drill.exec.testing.ControlsInjectorFactory;
 import org.apache.drill.exec.util.Pointer;
 import org.apache.drill.exec.work.foreman.ForemanSetupException;
-import org.apache.calcite.rel.RelCollationTraitDef;
-import org.apache.calcite.rel.rules.ReduceExpressionsRule;
-import org.apache.calcite.plan.ConventionTraitDef;
-import org.apache.calcite.plan.RelOptCostFactory;
-import org.apache.calcite.plan.RelTraitDef;
-import org.apache.calcite.plan.hep.HepPlanner;
-import org.apache.calcite.plan.hep.HepProgramBuilder;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.parser.SqlParseException;
-import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.drill.exec.work.foreman.SqlUnsupportedException;
 import org.apache.hadoop.security.AccessControlException;
 
@@ -117,6 +116,7 @@ public class DrillSqlWorker {
     StoragePluginRegistry storagePluginRegistry = context.getStorage();
     RuleSet drillLogicalRules = DrillRuleSets.mergedRuleSets(
         DrillRuleSets.getDrillBasicRules(context),
+        storagePluginRegistry.getStoragePluginRuleSet(context),
         DrillRuleSets.getJoinPermRules(context),
         DrillRuleSets.getDrillUserConfigurableLogicalRules(context));
     RuleSet drillPhysicalMem = DrillRuleSets.mergedRuleSets(
@@ -126,6 +126,7 @@ public class DrillSqlWorker {
     // Following is used in LOPT join OPT.
     RuleSet logicalConvertRules = DrillRuleSets.mergedRuleSets(
         DrillRuleSets.getDrillBasicRules(context),
+        storagePluginRegistry.getStoragePluginRuleSet(context),
         DrillRuleSets.getDrillUserConfigurableLogicalRules(context));
 
     RuleSet[] allRules = new RuleSet[] {drillLogicalRules, drillPhysicalMem, logicalConvertRules};

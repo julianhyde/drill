@@ -23,8 +23,10 @@ import java.util.Iterator;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.drill.common.exceptions.ExecutionSetupException;
 import org.apache.drill.exec.physical.base.PhysicalOperator;
@@ -44,13 +46,27 @@ public class PhoenixPrel extends AbstractRelNode implements Prel {
   private final double rows;
   private final PhoenixTableScan tableScan;
 
+  private class SubsetRemover extends RelShuttleImpl {
+
+    @Override
+    public RelNode visit(RelNode other) {
+      if (other instanceof RelSubset) {
+        return ((RelSubset) other).getBest().accept(this);
+      } else {
+        return super.visit(other);
+      }
+    }
+
+  }
+
   public PhoenixPrel(RelOptCluster cluster, RelTraitSet traitSet, PhoenixIntermediatePrel prel) {
     super(cluster, traitSet);
 
-    final RelNode input = prel.getInput();
+    final RelNode input = prel.getInput().accept(new SubsetRemover());
     rows = input.getRows();
-    tableScan = (PhoenixTableScan) prel.getInput();
+    tableScan = (PhoenixTableScan) input;
     hbaseTableName = tableScan.getTable().unwrap(PhoenixTable.class).pTable.getName().getString();
+    rowType = prel.getRowType();
 
   }
 

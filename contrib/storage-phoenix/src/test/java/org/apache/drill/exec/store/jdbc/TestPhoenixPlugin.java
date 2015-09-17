@@ -2,7 +2,6 @@ package org.apache.drill.exec.store.jdbc;
 
 import org.apache.drill.BaseTestQuery;
 import org.apache.drill.PlanTestBase;
-import org.apache.phoenix.end2end.BaseHBaseManagedTimeIT;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -24,18 +23,18 @@ public class TestPhoenixPlugin extends PlanTestBase {
 
   @BeforeClass
   public static void setupDefaultTestCluster() throws Exception {
-    BaseHBaseManagedTimeIT.doSetup();
+    // BaseHBaseManagedTimeIT.doSetup();
     BaseTestQuery.setupDefaultTestCluster();
   }
 
   @AfterClass
   public static void shutdownDb() throws Exception {
-    BaseHBaseManagedTimeIT.doTeardown();
+    // BaseHBaseManagedTimeIT.doTeardown();
   }
 
 
   @Test
   public void firstTest() throws Exception {
-    test("select * from phoenix.system.catalog");
+    test("select * from PHOENIX.DRILL.CALCITE");
   }
 }

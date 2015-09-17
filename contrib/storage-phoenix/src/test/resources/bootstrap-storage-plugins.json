@@ -1,6 +1,6 @@
 {
   "storage":{
-    phoenix : {
+    PHOENIX : {
       type:"phoenix",
       url:"jdbc:phoenix:localhost"
     }
