@@ -62,6 +62,8 @@ class PhoenixRecordReader extends AbstractRecordReader {
 
   private static final ImmutableMap<Integer, MinorType> JDBC_TYPE_MAPPINGS;
 
+  private static final long MILLIS_IN_DAY = 1000L * 60 * 60 * 24;
+
   private final String storagePluginName;
   private final KeyValueSchema kvSchema;
   private final ResultIterator result;
@@ -358,14 +360,13 @@ class PhoenixRecordReader extends AbstractRecordReader {
   }
 
   private class TimeCopier extends Copier<NullableTimeVector.Mutator> {
-
     public TimeCopier(int columnIndex, NullableTimeVector.Mutator mutator) {
       super(columnIndex, mutator);
     }
 
     @Override
     void copy(int index) {
-      mutator.setSafe(index, codec.decodeInt(ptr, sortOrder));
+      mutator.setSafe(index, (int) (codec.decodeLong(ptr, sortOrder) % MILLIS_IN_DAY));
     }
 
   }
